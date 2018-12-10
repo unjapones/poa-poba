@@ -7,6 +7,9 @@ contract ClaimVerifier {
 
   event ClaimValid(address _trustedClaimHolderAddress, address _otherIdentityAddress, uint256 claimType);
   event ClaimInvalid(address _trustedClaimHolderAddress, address _otherIdentityAddress, uint256 claimType);
+  event ClaimId(bytes32 claimId);
+  event DataHash(bytes32 dataHash);
+  event AddressRecovered(address recovered);
 
   function checkClaim(address _trustedClaimHolderAddress, address _otherIdentityAddress, uint256 claimType)
     public
@@ -38,11 +41,14 @@ contract ClaimVerifier {
     // Construct claimId (identifier + claim type) and get the claim from identity
     bytes32 claimId = keccak256(trustedClaimHolder, claimType);
     ( foundClaimType, scheme, issuer, sig, data, ) = _identity.getClaim(claimId);
+    emit ClaimId(claimId);
 
     // Recover the signer address by hashing the identity address, the claim type, and data
     bytes32 dataHash = keccak256(_identity, claimType, data);
+    emit DataHash(dataHash);
     bytes32 prefixedHash = keccak256("\x19Ethereum Signed Message:\n32", dataHash);
     address recovered = getRecoveredAddress(sig, prefixedHash);
+    emit AddressRecovered(recovered);
 
     // Calculate the "key" (keccak256 of the signer address) using the recovered signer address
     // and check that the trusted claim holder has the key with the corresponding purpose (3)
